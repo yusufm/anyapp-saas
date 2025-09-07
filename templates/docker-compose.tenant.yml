@@ -1,0 +1,28 @@
+services:
+  app:
+    image: ${APP_IMAGE:-ghcr.io/owner/your-app}:${APP_TAG:-latest}
+    env_file:
+      - ${TENANT_ENV_FILE}
+    restart: always
+    networks:
+      - proxy
+    volumes:
+      - ${APP_DATA_HOST:?APP_DATA_HOST not set}:/data
+      # Host directory containing SaaS partial templates (must exist on host)
+      - ${SAAS_TEMPLATES_HOST_PATH:-/opt/anyapp-saas/saas-templates}:/var/lib/anyapp-saas/templates:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.${TENANT}_app.rule=Host(`${TENANT_PREFIX}${TENANT}.${BASE_DOMAIN_ROOT}`)"
+      - "traefik.http.routers.${TENANT}_app.entrypoints=web,websecure"
+      - "traefik.http.routers.${TENANT}_app.tls=true"
+      - "traefik.http.routers.${TENANT}_app.middlewares=oauth2-errors@file,oauth2-forwardauth@file,tenant-access-check@file"
+      - "traefik.http.services.${TENANT}_app.loadbalancer.server.port=${APP_PORT}"
+      # Prometheus discovery labels (scrape on /metrics)
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=${APP_PORT}"
+      - "prometheus.io/path=/metrics"
+networks:
+  proxy:
+    external: true
+    name: proxy

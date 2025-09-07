@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=./access.schema.json
+version: 1
+tenant: tenant-aaa
+project_name: Example Project
+
+owners:
+  - owner@example.com
+
+members: []
+
+domains: []
+
+roles:
+  owner@example.com: owner

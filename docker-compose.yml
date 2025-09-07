@@ -1,0 +1,74 @@
+services:
+  traefik:
+    image: traefik:v2.11
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik/traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "./traefik/dynamic:/etc/traefik/dynamic:ro"
+      - "./traefik/acme.json:/letsencrypt/acme.json"
+    networks:
+      - proxy
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=9100"
+      - "prometheus.io/path=/metrics"
+
+  www:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - "./www:/usr/share/nginx/html:ro"
+      - "./docs:/usr/share/nginx/html/docs:ro"
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.www.rule=Host(`www.${TENANT_ROOT_DOMAIN:-example.com}`)"
+      - "traefik.http.routers.www.entrypoints=web,websecure"
+      - "traefik.http.routers.www.tls=true"
+      - "traefik.http.services.www.loadbalancer.server.port=80"
+
+  auth:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    restart: unless-stopped
+    env_file:
+      - ./templates/auth.env.example
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.services.auth.loadbalancer.server.port=4180"
+
+  provisioner:
+    build:
+      context: ./services/provisioner
+    restart: unless-stopped
+    environment:
+      - TENANT_ROOT_DOMAIN=${TENANT_ROOT_DOMAIN:-example.com}
+      - TENANT_PREFIX=${TENANT_PREFIX:-t-}
+      - REPO_PATH=/opt/repo
+      - RUNTIME_TENANTS_PATH=/var/lib/anyapp-saas/tenants
+      - AUTH_DEBUG=${AUTH_DEBUG:-0}
+    env_file:
+      - ./templates/billing.env.example
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - ".:/opt/repo:ro"
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      # Expose metrics on :8080/metrics via internal service (no public router)
+      - "traefik.http.services.provisioner.loadbalancer.server.port=8080"
+
+networks:
+  proxy:
+    name: proxy
+    external: true

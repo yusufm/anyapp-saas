@@ -1,0 +1,26 @@
+http:
+  routers:
+    www-auth:
+      rule: "Host(`www.example.com`) && PathPrefix(`/auth`)"
+      entryPoints:
+        - web
+        - websecure
+      tls: true
+      service: provisioner@docker
+      # Optionally apply error redirect middleware chain used elsewhere
+      middlewares:
+        - oauth2-errors
+    www-webhooks:
+      rule: "Host(`www.example.com`) && PathPrefix(`/webhooks/stripe`)"
+      entryPoints:
+        - web
+        - websecure
+      tls: true
+      service: provisioner@docker
+    oauth2-catchall:
+      rule: "PathPrefix(`/oauth2`)"
+      entryPoints:
+        - web
+        - websecure
+      tls: true
+      service: auth@docker

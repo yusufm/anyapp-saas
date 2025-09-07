@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck and Hadolint
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          curl -sSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o hadolint
+          sudo install -m 0755 hadolint /usr/local/bin/hadolint
+
+      - name: Setup Node for markdownlint
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install markdownlint-cli
+        run: npm install -g markdownlint-cli@0.39.0
+
+      - name: ShellCheck scripts
+        run: |
+          shopt -s nullglob
+          files=(scripts/*.sh)
+          if [ ${#files[@]} -gt 0 ]; then
+            shellcheck -S style "${files[@]}"
+          else
+            echo "No shell scripts to lint"
+          fi
+
+      - name: Hadolint Dockerfiles
+        run: |
+          shopt -s nullglob
+          files=(services/**/Dockerfile examples/**/Dockerfile)
+          if [ ${#files[@]} -gt 0 ]; then
+            for f in "${files[@]}"; do
+              echo "Linting $f"; hadolint "$f" || exit 1
+            done
+          else
+            echo "No Dockerfiles to lint"
+          fi
+
+      - name: Markdownlint
+        run: |
+          markdownlint -c .markdownlint.yaml '**/*.md' --ignore 'node_modules' || exit 1
