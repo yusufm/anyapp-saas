@@ -96,6 +96,7 @@ fi
 # 3) Bring up tenant stack using shared template
 # Export tenant env into the shell so docker compose variable interpolation works
 set -a
+# shellcheck source=/dev/null
 source "$TENANT_ENV"
 export TENANT_ENV_FILE="$TENANT_ENV"
 set +a

@@ -59,6 +59,7 @@ fi
 
 # Export tenant env so docker compose variable interpolation works
 set -a
+# shellcheck source=/dev/null
 source "$TENANT_ENV"
 export TENANT_ENV_FILE="$TENANT_ENV"
 set +a

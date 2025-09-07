@@ -24,6 +24,7 @@ if [[ ! -f "$TENANT_ENV" ]]; then
 fi
 
 set -a
+# shellcheck source=/dev/null
 source "$TENANT_ENV"
 export TENANT_ENV_FILE="$TENANT_ENV"
 set +a

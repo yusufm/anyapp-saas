@@ -27,6 +27,7 @@ if [[ ! -f "$TENANT_ENV" ]]; then
   echo "Warning: tenant env not found: $TENANT_ENV (continuing with down)" >&2
 else
   set -a
+  # shellcheck source=/dev/null
   source "$TENANT_ENV"
   export TENANT_ENV_FILE="$TENANT_ENV"
   set +a
