@@ -2,6 +2,7 @@
 FROM node:20-alpine
 
 # Install docker cli + compose plugin
+# hadolint ignore=DL3018
 RUN apk add --no-cache docker-cli docker-cli-compose bash git curl jq
 
 WORKDIR /opt/provisioner
